@@ -1,0 +1,5 @@
+# PyCharm exclusion
+.idea/
+
+# Visual Studio Code exclusion
+.vscode/
