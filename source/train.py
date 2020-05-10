@@ -31,7 +31,7 @@ def load_data():
     """Reads edge list representation and create the adjacency matrix"""
     g = nx.read_edgelist('yeast.edgelist')
     adj = nx.adjacency_matrix(g)
-    return adj)
+    return adj
 
 def weight_variable_glorot(input_dim, output_dim, name=""):
     """
@@ -45,6 +45,7 @@ def weight_variable_glorot(input_dim, output_dim, name=""):
 
     Alternatively, can directly use torch.nn.init.xavier_uniform_(tensor, gain=1.0)
     """
+
     init_range = np.sqrt(6.0 / (input_dim + output_dim))
 
     x = torch.empty(input_dim, output_dim, dtype=torch.float32).uniform_(-init_range, init_range)
@@ -52,5 +53,46 @@ def weight_variable_glorot(input_dim, output_dim, name=""):
 
     return x
 
+def sparse_to_tuple(sparse_mx):
+    """ 
+        Change a sparse matrix into tuple format:
+        e.g.:
+        coords: coords[i] shows coordinates for values[i]
+    """
 
+    # to learn more about coordinate matrix format use this link:
+    # https://scipy-lectures.org/advanced/scipy_sparse/coo_matrix.html
+    # in essence, it converts sparse matrix into 3 arrays: data, row and col
+    if not sp.isspmatrix_coo(sparse_mx):
+        sparse_mx = sparse_mx.tocoo()
 
+    coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
+    values = sparse_mx.data
+    shape = sparse_mx.shape
+
+    return coords, values, shape
+
+class DropoutSparse(nn.Module):
+    """
+    Implements dropout on a torch.sparse_coo type sparce matrix 
+    """    
+    def __init__(self, keep_prob, num_nonzero_elems):
+
+        super(DropoutSparse, self).__init__()
+
+        self.keep_prob = keep_prob
+        self.num_nonzero_elems = num_nonzero_elems
+
+    def forward(self, x):
+
+        noise_shape = [self.num_nonzero_elems]
+        random_tensor = self.keep_prob
+        random_tensor += torch.rand(noise_shape)
+        dropout_mask = torch.floor(random_tensor).type(dtype=torch.bool)
+
+        indices_to_keep = x._indices()[:,dropout_mask]
+        values_to_keep = x._values()[dropout_mask]
+
+        return torch.sparse.FloatTensor(indices_to_keep, 
+                                        values_to_keep*(1./(keep_prob)), 
+                                        x.size())
