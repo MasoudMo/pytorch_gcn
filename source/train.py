@@ -28,7 +28,9 @@ np.random.seed(seed)
 torch.manual_seed(seed
 
 def load_data():
-    """Reads edge list representation and create the adjacency matrix"""
+    """
+    Reads edge list representation and create the adjacency matrix
+    """
     g = nx.read_edgelist('yeast.edgelist')
     adj = nx.adjacency_matrix(g)
     return adj
@@ -75,7 +77,8 @@ def sparse_to_tuple(sparse_mx):
 class DropoutSparse(nn.Module):
     """
     Implements dropout on a torch.sparse_coo type sparce matrix 
-    """    
+    """  
+
     def __init__(self, keep_prob, num_nonzero_elems):
 
         super(DropoutSparse, self).__init__()
@@ -96,3 +99,19 @@ class DropoutSparse(nn.Module):
         return torch.sparse.FloatTensor(indices_to_keep, 
                                         values_to_keep*(1./(keep_prob)), 
                                         x.size())
+
+def preprocess_graph(adj):
+    """
+    Normalizes the adjacency matrix using node degrees
+
+    This normalization is explained here:
+    https://people.orie.cornell.edu/dpw/orie6334/Fall2016/lecture7.pdf
+    """
+
+    adj = sp.coo_matrix(adj)
+    adj_ = adj + sp.eye(adj.shape[0])
+    rowsum = np.array(adj_.sum(1))
+    degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
+    adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
+
+    return sparse_to_tuple(adj_normalized)
