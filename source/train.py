@@ -254,14 +254,14 @@ def mask_test_edges(adj, pos_link_percentage):
 
 class GraphConvolution(nn.Module):
     """
-    Basic graph convolution layer for undirected graph without edge labels.
+    Basic graph convolution layer for undirected graph without edge labels
     """
 
     def __init__(self, input_dim, output_dim, adj, dropout=0., act=nn.ReLU()):
         super(GraphConvolution, self).__init__()
         self.issparse = False
         self.act = act
-        self.drop_layer = nn.Dropout(p=dropout)
+        self.drop_layer = nn.Dropout(p=1-dropout)
         self.adj = adj
         self.fc1 = nn.Linear(input_dim, output_dim)
         self.weights = weight_variable_glorot(input_dim, output_dim)
@@ -274,7 +274,7 @@ class GraphConvolution(nn.Module):
 
 class GraphConvolutionSparse():
     """
-    Graph convolution layer for sparse inputs.
+    Graph convolution layer for sparse inputs
     """
 
     def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=nn.ReLU()):
@@ -292,3 +292,21 @@ class GraphConvolutionSparse():
         x = torch.sparse.mm(self.adj, x)
         x = self.act(x)
         return x
+
+class InnerProductDecoder():
+    """
+    Decoder model layer for link prediction
+    """
+    def __init__(self, input_dim, dropout=0., act=nn.Sigmoid()):
+        self.issparse = False
+        self.drop_layer = nn.Dropout(p=1-dropout)
+        self.act = act
+
+    def forward(self, inputs):
+        inputs = self.drop_layer(inputs, 1-self.dropout)
+        x = torch.t(inputs)
+        x = torch.matmul(inputs, x)
+        x = torch.reshape(x, [-1])
+        outputs = self.act(x)
+        return outputs
+
