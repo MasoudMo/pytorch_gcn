@@ -35,7 +35,7 @@ def load_data():
     adj = nx.adjacency_matrix(g)
     return adj
 
-def weight_variable_glorot(input_dim, output_dim, name=""):
+def weight_variable_glorot(input_dim, output_dim):
     """
     Create a weight variable with Glorot & Bengio initialization.
 
@@ -223,3 +223,72 @@ def mask_test_edges(adj, pos_link_percentage):
     adj_train = adj_train + adj_train.T
 
     return adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false
+
+# def get_roc_score(edges_pos, edges_neg):
+#     feed_dict.update({placeholders['dropout']: 0})
+#     emb = sess.run(model.embeddings, feed_dict=feed_dict)
+
+#     def sigmoid(x):
+#         return 1 / (1 + np.exp(-x))
+
+#     # Predict on test set of edges
+#     adj_rec = np.dot(emb, emb.T)
+#     preds = []
+#     pos = []
+#     for e in edges_pos:
+#         preds.append(sigmoid(adj_rec[e[0], e[1]]))
+#         pos.append(adj_orig[e[0], e[1]])
+
+#     preds_neg = []
+#     neg = []
+#     for e in edges_neg:
+#         preds_neg.append(sigmoid(adj_rec[e[0], e[1]]))
+#         neg.append(adj_orig[e[0], e[1]])
+
+#     preds_all = np.hstack([preds, preds_neg])
+#     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
+#     roc_score = roc_auc_score(labels_all, preds_all)
+#     ap_score = average_precision_score(labels_all, preds_all)
+
+#     return roc_score, ap_score
+
+class GraphConvolution(nn.Module):
+    """
+    Basic graph convolution layer for undirected graph without edge labels.
+    """
+
+    def __init__(self, input_dim, output_dim, adj, dropout=0., act=nn.ReLU()):
+        super(GraphConvolution, self).__init__()
+        self.issparse = False
+        self.act = act
+        self.drop_layer = nn.Dropout(p=dropout)
+        self.adj = adj
+        self.fc1 = nn.Linear(input_dim, output_dim)
+        self.weights = weight_variable_glorot(input_dim, output_dim)
+        self.fc1.weight.data = nn.Parameter(self.weights)
+    def forward(self, x):       
+        x = self.drop_layer(x)
+        x = self.fc1(x)
+        x = self.act(torch.sparse.mm(self.adj, x))
+        return x
+
+class GraphConvolutionSparse():
+    """
+    Graph convolution layer for sparse inputs.
+    """
+
+    def __init__(self, input_dim, output_dim, adj, features_nonzero, dropout=0., act=nn.ReLU()):
+        self.issparse = False
+        self.weights = nn.parameter(weight_variable_glorot(input_dim, output_dim))
+        self.dropout = dropout
+        self.adj = adj
+        self.act = act
+        self.issparse = True
+        self.features_nonzero = features_nonzero
+
+    def forward(self, x):
+        x = dropout_sparse(x, 1-self.dropout, self.features_nonzero)
+        x = torch.sparse.mm(x, self.weights)
+        x = torch.sparse.mm(self.adj, x)
+        x = self.act(x)
+        return x
