@@ -176,6 +176,11 @@ def main():
     num_nodes = adj.shape[0]
     num_edges = adj.sum()
 
+    # Print graph information
+    print("Graph Statistics:")
+    print("number of nodes: {:d}".format(num_nodes))
+    print("number of edges: {:d} \n".format(num_edges))
+
     # Extract features (one-hot encoding since this is featureless)
     features = sparse_to_tuple(sp.identity(num_nodes))
     num_features = features[2][1]
