@@ -74,6 +74,9 @@ def get_roc_score(edges_pos, edges_neg, adj_orig, emb):
     """
     Computes Receiver Operating Characteristic score
 
+    The following blog does a good job of explaining what auc roc is:
+    https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5
+
     Parameters:
         edges_pos (list): list of tuples for edges that should be present
         edges_neg (list): list of tuples for edges that should not be present
@@ -84,23 +87,27 @@ def get_roc_score(edges_pos, edges_neg, adj_orig, emb):
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
 
-    # Predict on test set of edges
+    # Use embeddings to recreate adjacency matrix
     adj_rec = np.dot(emb, emb.T)
+
+    # For predicted positive edges, use sigmoid to get a value 0 and 1
     preds = []
     pos = []
-
     for e in edges_pos:
         preds.append(sigmoid(adj_rec[e[0], e[1]]))
         pos.append(adj_orig[e[0], e[1]])
 
+    # For predicted negative (edges that should not be present) edges, use sigmoid to get a value 0 and 1
     preds_neg = []
     neg = []
     for e in edges_neg:
         preds_neg.append(sigmoid(adj_rec[e[0], e[1]]))
         neg.append(adj_orig[e[0], e[1]])
 
+    # Stack positive and negative prediction and labels
     preds_all = np.hstack([preds, preds_neg])
     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
+
     roc_score = roc_auc_score(labels_all, preds_all)
     ap_score = average_precision_score(labels_all, preds_all)
 

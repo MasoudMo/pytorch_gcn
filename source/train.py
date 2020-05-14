@@ -4,6 +4,9 @@ from __future__ import print_function
 
 import time
 
+# Command line argument parse
+import argparse
+
 # numpy
 import numpy as np
 import scipy.sparse as sp
@@ -33,13 +36,16 @@ seed = 123
 np.random.seed(seed)
 torch.manual_seed(seed)
 
+def dummy_func(x):
+    return x
+
 
 class GCNModel(nn.Module):
     """
     GCN Network class
 
     Attributes:
-        adj (sparse torch FloatTensor):
+        adj (sparse torch FloatTensor): input sparse torch tensor
         dropout (float): dropout rate
         input_dim (int): number of features
         output_dim (int): output feature dimension
@@ -84,10 +90,10 @@ class GCNModel(nn.Module):
         self.graph_conv = GraphConvolution(input_dim=self.hidden_dim,
                                            output_dim=self.output_dim,
                                            adj=self.adj,
-                                           act=lambda x: x,
+                                           act=dummy_func,
                                            dropout=self.dropout)
 
-        self.inner_prod = InnerProductDecoder(act=lambda x: x)
+        self.inner_prod = InnerProductDecoder(act=dummy_func)
         
     def forward(self, x):
         """
@@ -117,7 +123,7 @@ def cost_function(preds, labels, num_nodes, num_edges):
 
     Parameters:
         preds (torch tensor): predictions
-        labels (torch tensor): labels
+        labels (torch dense tensor): labels
         num_nodes(int): number of nodes
         num_edges(int): number of edges
 
@@ -130,9 +136,7 @@ def cost_function(preds, labels, num_nodes, num_edges):
     norm = num_nodes**2 / float((num_nodes**2 - num_edges) * 2)
     
     preds_sub = preds
-    labels_sub = labels
-
-    labels_sub = torch.reshape(labels_sub, [-1])
+    labels_sub = torch.reshape(labels, [-1])
 
     cross_entropy_loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight,
                                               reduction='mean')
@@ -144,11 +148,32 @@ def cost_function(preds, labels, num_nodes, num_edges):
 
 def main():
 
-    adj = load_data('../data/yeast.edgelist')
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='GCN training on sparse graph in edgelist format')
+    parser.add_argument('--input_path', type=str, required=True, help='path to edgelist file.')
+    parser.add_argument('--dropout', type=float, default='0.1', help='dropout rate')
+    parser.add_argument('--hidden_dim', type=int, default='32', help='hidden layer dimension')
+    parser.add_argument('--output_dim', type=int, default='16', help='output feature dimension')
+    parser.add_argument('--learning_rate', type=float, default='0.01', help='learning rate')
+    parser.add_argument('--epochs', type=int, default='20', help='number of epochs')
+    parser.add_argument('--model_path', type=str, default='../model/', help='path to save the trained model to.')
+    args = parser.parse_args()
+
+    # Model parameters
+    dropout = args.dropout
+    hidden_dim = args.hidden_dim
+    output_dim = args.output_dim
+    lr = args.learning_rate
+    epochs = args.epochs
+
+    # Load data
+    adj = load_data(args.input_path)
+
+    # Extract number of nodes and edges
     num_nodes = adj.shape[0]
     num_edges = adj.sum()
 
-    # Featureless (one-hot encoding)
+    # Extract features (one-hot encoding since this is featureless)
     features = sparse_to_tuple(sp.identity(num_nodes))
     num_features = features[2][1]
     features_nonzero = features[1].shape[0]
@@ -158,16 +183,13 @@ def main():
     adj_orig = adj - sp.dia_matrix((adj.diagonal()[np.newaxis, :], [0]), shape=adj.shape)
     adj_orig.eliminate_zeros()
 
+    # Remove validation and test edges and create training graph
     adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj, 2)
     adj = adj_train
 
     # Normalize adjacency matrix
     adj_norm = preprocess_graph(adj)
     adj_norm = tuples_to_torch_sparse(adj_norm)
-
-    dropout = 0.1
-    hidden_dim = 32
-    output_dim = 16
 
     # Create model
     model = GCNModel(adj=adj_norm,
@@ -177,19 +199,24 @@ def main():
                      hidden_dim=hidden_dim,
                      features_nonzero=features_nonzero)
 
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    # Initialize optimizer
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
+    # Print model parameters
     print("Learnable parameters are:")
     for name, param in model.named_parameters():
         print(name)
 
+    # Create labels matrix
     adj_label = adj_train + sp.eye(adj_train.shape[0])
     adj_label = sparse_to_tuple(adj_label)
     adj_label = tuples_to_torch_sparse(adj_label)
 
-    for epoch in range(20):
+    # Start training the model
+    for epoch in range(epochs):
         t = time.time()
-        optimizer.zero_grad()   # zero the gradient buffers
+        # Zero the gradient buffers
+        optimizer.zero_grad()
         reconstructions, embeddings = model(features)
         loss = cost_function(reconstructions, adj_label.to_dense(), num_nodes, num_edges)
         loss.backward()
@@ -206,11 +233,15 @@ def main():
               "val_ap=", "{:.5f}".format(ap_curr),
               "time=", "{:.5f}".format(time.time() - t))
 
+    # Find test data accuracy
     with torch.no_grad():
         _, embeddings = model(features)
         roc_score, ap_score = get_roc_score(test_edges, test_edges_false, adj_orig, embeddings)
         print('Test ROC score: {:.5f}'.format(roc_score))
         print('Test AP score: {:.5f}'.format(ap_score))
+
+    # Save the trained model
+    torch.save(model, args.model_path)
 
 
 if __name__ == '__main__':
