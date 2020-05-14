@@ -132,7 +132,10 @@ def cost_function(preds, labels, num_nodes, num_edges):
 
     """
 
+    # If num_edges is small, pos_weight will be higher to reduce false negative predictions
     pos_weight = torch.tensor(float(num_nodes**2 - num_edges) / num_edges, dtype=torch.float32, requires_grad=False)
+
+    # Normalization factor
     norm = num_nodes**2 / float((num_nodes**2 - num_edges) * 2)
     
     preds_sub = preds
