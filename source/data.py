@@ -1,3 +1,12 @@
+"""
+Author: Masoud Mokhtari
+
+This code is a PyTorch transalation of http://snap.stanford.edu/deepnetbio-ismb/ipynb/Graph+Convolutional+Prediction+of+Protein+Interactions+in+Yeast.html
+
+Data methods used for loading and preprocessing data as well as creating
+test and validation data
+
+"""
 
 from __future__ import division
 from __future__ import print_function

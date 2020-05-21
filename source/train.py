@@ -1,3 +1,11 @@
+"""
+Author: Masoud Mokhtari
+
+This code is a PyTorch transalation of http://snap.stanford.edu/deepnetbio-ismb/ipynb/Graph+Convolutional+Prediction+of+Protein+Interactions+in+Yeast.html
+
+Simple implementation of vanilla GCN model on protein interactions in yeast
+
+"""
 
 from __future__ import division
 from __future__ import print_function
