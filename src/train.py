@@ -25,24 +25,25 @@ import torch.optim as optim
 import torch.nn as nn
 
 # Layers
-from source.layers import GraphConvolutionSparse
-from source.layers import GraphConvolution
-from source.layers import InnerProductDecoder
+from layers import GraphConvolutionSparse
+from layers import GraphConvolution
+from layers import InnerProductDecoder
 
 # data functions
-from source.data import load_data
-from source.data import mask_test_edges
-from source.data import preprocess_graph
+from data import load_data
+from data import mask_test_edges
+from data import preprocess_graph
 
 # Other functions
-from source.functions import sparse_to_tuple
-from source.functions import get_roc_score
-from source.functions import tuples_to_torch_sparse
+from functions import sparse_to_tuple
+from functions import get_roc_score
+from functions import tuples_to_torch_sparse
 
 # Set random seed
 seed = 123
 np.random.seed(seed)
 torch.manual_seed(seed)
+
 
 def dummy_func(x):
     return x
@@ -167,7 +168,7 @@ def main():
     parser.add_argument('--output_dim', type=int, default='16', help='output feature dimension')
     parser.add_argument('--learning_rate', type=float, default='0.01', help='learning rate')
     parser.add_argument('--epochs', type=int, default='20', help='number of epochs')
-    parser.add_argument('--model_path', type=str, default='../model/', help='path to save the trained model to.')
+    parser.add_argument('--model_path', type=str, default='../models/', help='path to save the trained model to.')
     args = parser.parse_args()
 
     # Model parameters

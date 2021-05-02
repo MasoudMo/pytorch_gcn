@@ -3,8 +3,7 @@ Author: Masoud Mokhtari
 
 This code is a PyTorch transalation of http://snap.stanford.edu/deepnetbio-ismb/ipynb/Graph+Convolutional+Prediction+of+Protein+Interactions+in+Yeast.html
 
-Data methods used for loading and preprocessing data as well as creating
-test and validation data
+Data methods used for loading and preprocessing data and creating the test and validation set
 
 """
 
@@ -19,7 +18,7 @@ import scipy.sparse as sp
 import networkx as nx
 
 # Import helper functions
-from source.functions import sparse_to_tuple
+from functions import sparse_to_tuple
 
 
 def load_data(edge_list_file_path):
