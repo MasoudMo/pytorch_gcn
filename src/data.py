@@ -1,7 +1,7 @@
 """
 Author: Masoud Mokhtari
 
-This code is a PyTorch transalation of http://snap.stanford.edu/deepnetbio-ismb/ipynb/Graph+Convolutional+Prediction+of+Protein+Interactions+in+Yeast.html
+This code is a PyTorch translation of http://snap.stanford.edu/deepnetbio-ismb/ipynb/Graph+Convolutional+Prediction+of+Protein+Interactions+in+Yeast.html
 
 Data methods used for loading and preprocessing data and creating the test and validation set
 
