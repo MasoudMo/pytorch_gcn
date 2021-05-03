@@ -168,7 +168,8 @@ def main():
     parser.add_argument('--output_dim', type=int, default='16', help='output feature dimension')
     parser.add_argument('--learning_rate', type=float, default='0.01', help='learning rate')
     parser.add_argument('--epochs', type=int, default='20', help='number of epochs')
-    parser.add_argument('--model_path', type=str, default='../models/', help='path to save the trained model to.')
+    parser.add_argument('--model_path', type=str, default='../models/model.pt',
+                        help='path to save the trained model to.')
     args = parser.parse_args()
 
     # Model parameters
